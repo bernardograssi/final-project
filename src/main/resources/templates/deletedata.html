@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Delete Data</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li><a class="smoothscroll" href="/">Home</a></li>
+                <li><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li class="current"><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li><a class="smoothscroll" href="/reload">Reload Database</a></li>
+
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <div id="box">
+        <div id="box-border">
+            <table id="table-sn">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Action</th>
+                </tr>
+                <tr th:if="${names.empty}">
+                    <td colspan="3"> No Data Available </td>
+                </tr>
+                <tr th:each="name : ${names}" th:id="${name.name}">
+                    <td th:text="${name.id}"></td>
+                    <td th:text="${name.name}"></td>
+                    <td>
+                        <a href="#" th:id="${name.id}" class="delete-btn" th:title="${name.name}" aria-label="label"
+                            onclick="javascript:deleteItem(this)">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</body>
+<script>
+
+    deleteItem = function (element) {
+        let elementId = element.id;
+        let elementName = element.title;
+
+        if (confirm("Are you sure you want to delete " + elementName + " from the database?")) {
+            // Proceed to delete such supernova from the database.
+            let output = { "name": elementName, "id": elementId };
+            $.ajax({
+                type: "POST",
+                url: "/deleteItem",
+                contentType: "application/json",
+                data: JSON.stringify(output),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    // Let user know of successful operation.
+                    $("#" + elementName).remove();
+                }, error: function (xhr) {
+                    // Let user know that operation failed.
+                    alert("Something went wrong! Please try again.");
+                }
+
+            })
+        } else {
+            // Do nothing.
+        }
+
+    }
+
+</script>
+
+</html>

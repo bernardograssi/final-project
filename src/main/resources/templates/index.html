@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Charts</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+<style>
+    video {
+        object-fit: cover;
+        width: 100vw;
+        height: 105vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 0;
+    }
+</style>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li class="current"><a class="smoothscroll" href="/">Home</a></li>
+                <li><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li><a class="smoothscroll" href="/reload">Reload Database</a></li>
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <video playsinline autoplay muted loop id="bgvid">
+        <source src="/videos/bkg-video.mp4" type="video/mp4">
+    </video>
+
+    <div id="welcome-box">
+        Welcome to the Supernovae charts visualization page!
+    </div>
+
+
+</body>
+<script>
+
+</script>
+
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Add New Data</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li><a class="smoothscroll" href="/">Home</a></li>
+                <li><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li class="current"><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li><a class="smoothscroll" href="/reload">Reload Database</a></li>
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <div id="box">
+        <div id="box-border">
+            <ul>
+                <li>
+                    <div id="box-data">
+                        <p id="box-name">Upload a .csv file here to add new data: </p><br>
+                    </div>
+                </li>
+                <li>
+                    <div id="drag-and-drop">
+                        <div class="fileUploadInput">
+                            <input type="file" title="Add new data by uploading a file!" id="fileInput" accept=".csv" />
+                            <button id="fileBtn" onclick="submitFile()" title="Submit the file!"><i
+                                    class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </li>
+                <li id="warning">
+                    Warning
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+<script>
+
+    // On file submission:
+    submitFile = function (element) {
+        let input = $("#fileInput").prop('files')[0];
+
+        if (input !== undefined && input.type === "text/csv") {
+            var reader = new FileReader();
+            reader.onload = function () {
+                try {
+                    let result = reader.result.split("\r\n");
+
+                    if (result[0].split(",")[0] !== "name" && result[0].split(",")[1] !== "time" && result[0].split(",")[2] !== "magnitude") {
+                        throw 'Cannot parse csv file!';
+                    }
+
+                    let name = result[1].split(",")[0];
+                    let output = {};
+
+                    output["name"] = name;
+                    output["values"] = [];
+
+                    for (var i = 1; i < result.length; i++) {
+                        let time = parseFloat(result[i].split(",")[1]);
+                        let magnitude = parseFloat(result[i].split(",")[2]);
+
+                        if (time !== undefined && magnitude !== undefined && (isNaN(time) === false) && (isNaN(magnitude) === false)) {
+                            let obj = { "time": time, "magnitude": magnitude };
+                            output["values"].push(obj);
+                        }
+                    }
+
+                    // POST request to add new data to the database.
+                    $.ajax({
+                        type: "POST",
+                        url: "/addNewData",
+                        contentType: "application/json",
+                        data: JSON.stringify(output),
+                        dataType: "json",
+                        cache: false,
+                        success: function (data) {
+                            // Let user know of successful operation.
+                            $("#warning").css("display", "block");
+                            $("#warning").css("background-color", "green");
+                            $("#warning").text("Success!");
+                            $("#fileInput").val('');
+                        }, error: function (xhr) {
+                            // Let user know that the supernova already exists in database.
+                            $("#warning").css("display", "block");
+                            $("#warning").css("background-color", "red");
+                            $("#warning").text("SN already exists!");
+                            $("#fileInput").val('');
+                        }
+                    });
+
+                } catch {
+                    alert("The format of the uploaded .csv is not supported!");
+                    $("#fileInput").val('');
+                }
+
+            };
+
+            if (input) {
+                reader.readAsText(input);
+            }
+        } else {
+            alert("failed");
+        }
+    }
+
+</script>
+
+</html>

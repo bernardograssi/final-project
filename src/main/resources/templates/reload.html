@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Delete Data</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li><a class="smoothscroll" href="/">Home</a></li>
+                <li><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li class="current"><a class="smoothscroll" href="/reload">Reload Database</a></li>
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <div id="box">
+        <div id="box-border">
+            <ul>
+                <li id="reset-li">
+                    <a class="reset-btn" href="javascript:reset()">
+                        Reload Database
+                    </a>
+                </li>
+                <li id="reset-spinner">
+                    <div class="lds-roller">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</body>
+<script>
+
+    reset = function () {
+        var executed = false;
+
+        if (confirm("Are you sure you want to reload the database?")) {
+            $.ajax({
+                type: "POST",
+                url: "/reloadDatabase",
+                cache: false,
+                beforeSend: function () {
+                    if (!executed) {
+                        $("#reset-spinner").css("display", "block");
+                    }
+                }, complete: function () {
+                    $("#reset-spinner").css("display", "none");
+                },
+                success: function (data) {
+                    // Let user know of successful operation.
+                    alert("The database has been successfully reloaded!");
+                }, error: function (xhr) {
+                    // Let user know that operation failed.
+                    alert("The operation failed! Please try again.");
+                }
+            });
+        } else {
+            // Do nothing.
+        }
+    }
+
+</script>
+
+</html>

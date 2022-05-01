@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Delete Data</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li><a class="smoothscroll" href="/">Home</a></li>
+                <li><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li class="current"><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li><a class="smoothscroll" href="/reload">Reload Database</a></li>
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <div id="box">
+        <div id="box-border">
+            <a class="reset-btn" href="javascript:reset()">
+                Drop Database
+            </a>
+        </div>
+    </div>
+
+</body>
+<script>
+
+    reset = function () {
+        if (confirm("Are you sure you want to reset the database?")) {
+            $.ajax({
+                type: "POST",
+                url: "/resetDatabase",
+                cache: false,
+                success: function (data) {
+                    // Let user know of successful operation.
+                    alert("The database has been successfully reseted!");
+                }, error: function (xhr) {
+                    // Let user know that operation failed.
+                    alert("The database is already empty!");
+                }
+            });
+        } else {
+            // Do nothing.
+        }
+    }
+
+</script>
+
+</html>

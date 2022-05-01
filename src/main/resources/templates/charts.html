@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSC3810 Final Project - Charts</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
+</head>
+
+<body>
+    <header id="home">
+
+        <nav id="nav-wrap">
+
+            <a class="mobile-btn" href="#nav-wrap" title="Show navigation">Show navigation</a>
+            <a class="mobile-btn" href="#home" title="Hide navigation">Hide navigation</a>
+
+            <ul id="nav" class="nav">
+                <li><a class="smoothscroll" href="/">Home</a></li>
+                <li class="current"><a class="smoothscroll" href="/charts">Charts</a></li>
+                <li><a class="smoothscroll" href="/newdata">Add New Data</a></li>
+                <li><a class="smoothscroll" href="/deletedata">Delete Data</a></li>
+                <li><a class="smoothscroll" href="/reset">Drop Database</a></li>
+                <li><a class="smoothscroll" href="/reload">Reload Database</a></li>
+            </ul>
+
+        </nav>
+
+    </header>
+
+    <div class="dropdown">
+        <button class="dropbtn" id="theBtn">Select SN</button>
+        <div class="dropdown-content">
+            <a th:if="${names.empty}">No Data Available</a>
+            <a th:each="name : ${names}" th:text="${name.name}" onclick="changeChart(this)"></a>
+        </div>
+    </div>
+
+    <div>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div id="box">
+        <div id="box-border">
+            <div id="box-inner">
+                <p id="box-name">Name: </p><br>
+                <p id="box-max">Max (M): </p><br>
+                <p id="box-min">Min (M): </p><br>
+                <p id="box-delta">Delta (M): </p><br>
+                <p id="box-aum">Area Magnitude:</p> <br>
+                <p id="box-aul">Area Luminosity: </p><br>
+
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+<script>
+    var myChart = null;
+    var labels = null;
+    var data = null;
+    var config = null;
+
+    changeChart = function (element) {
+        var selection = element.text.split(" ")[0];
+        document.getElementById("theBtn").textContent = selection;
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json",
+            url: "/getSNData/" + selection,
+            success: function (res) {
+
+                if (myChart !== null) {
+                    myChart.destroy();
+                }
+
+                let time_values = [],
+                    mag_values = [],
+                    lum_values = [],
+                    size = res["data"].length,
+                    name = res["data"][0]["name"],
+                    t = 0;
+
+                for (var i = 0; i < size; i++) {
+                    t = parseFloat(res["data"][i]["time_value"]).toFixed(2);
+                    m = (res["data"][i]["magnitude"]);
+                    l = (res["data"][i]["luminosity"]);
+                    time_values.push(t);
+                    mag_values.push(m);
+                    lum_values.push(l);
+                }
+
+                labels = time_values;
+                data = {
+                    labels: labels,
+                    datasets: [{
+                        label: name + " magnitude curve",
+                        backgroundColor: 'rgb(240, 96, 0)',
+                        borderColor: 'rgb(240, 96, 0)',
+                        data: mag_values,
+                        yAxisID: 'y',
+                    },
+                    {
+                        label: name + " luminosity curve",
+                        backgroundColor: 'rgb(3, 18, 184)',
+                        borderColor: 'rgb(3, 18, 184)',
+                        data: lum_values,
+                        yAxisID: 'y1',
+                    }]
+                };
+
+                config = {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        stacked: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Magnitude/Luminosity Chart For SN Type Ia'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                //reverse: true,
+                                
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                            },
+                        }
+                    }
+                };
+
+                myChart = new Chart(
+                    document.getElementById('myChart'),
+                    config
+                );
+
+                document.getElementById("box-name").textContent = "Name: " + name;
+                document.getElementById("box-max").textContent = "Max (M): " + parseFloat(res["data"][0]["bandMax"]).toFixed(2);
+                document.getElementById("box-min").textContent = "Min (M): " + parseFloat(res["data"][0]["bandMin"]).toFixed(2);
+                document.getElementById("box-delta").textContent = "Delta (M): " + parseFloat(res["data"][0]["delta_value"]).toFixed(2);
+                document.getElementById("box-aum").textContent = "Area Magnitude: " + parseFloat(res["data"][0]["aum"]).toFixed(2);
+                document.getElementById("box-aul").textContent = "Area Luminosity: " + parseFloat(res["data"][0]["aul"]).toFixed(2);
+
+                console.log(res["data"][0]);
+            }
+
+        });
+
+    }
+
+
+
+
+</script>
+
+</html>
