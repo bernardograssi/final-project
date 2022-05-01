@@ -1,7 +1,7 @@
 package com.example.finalproject.model;
 
-public class GenericResult implements java.io.Serializable{
-    
+public class GenericResult implements java.io.Serializable {
+
     private String name;
     private Double bandMax;
     private Double bandMin;
@@ -11,9 +11,11 @@ public class GenericResult implements java.io.Serializable{
     private Double magnitude;
     private Double luminosity;
     private Double time_value;
+    private Double calc_res_1;
+    private Double calc_res_2;
 
-    public GenericResult(String name, Double bandMax, Double bandMin, Double delta_value, Double aum, Double aul, 
-    Double magnitude, Double luminosity, Double time_value) {
+    public GenericResult(String name, Double bandMax, Double bandMin, Double delta_value, Double aum, Double aul,
+            Double magnitude, Double luminosity, Double time_value, Double calc_res_1, Double calc_res_2) {
         this.name = name;
         this.bandMax = bandMax;
         this.bandMin = bandMin;
@@ -23,8 +25,9 @@ public class GenericResult implements java.io.Serializable{
         this.magnitude = magnitude;
         this.luminosity = luminosity;
         this.time_value = time_value;
+        this.calc_res_1 = calc_res_1;
+        this.calc_res_2 = calc_res_2;
     }
-
 
     public String getName() {
         return this.name;
@@ -98,7 +101,21 @@ public class GenericResult implements java.io.Serializable{
         this.time_value = time_value;
     }
 
+    public Double getCalc_res_1() {
+        return this.calc_res_1;
+    }
 
+    public void setCalc_res_1(Double calc_res_1) {
+        this.calc_res_1 = calc_res_1;
+    }
+
+    public Double getCalc_res_2() {
+        return this.calc_res_2;
+    }
+
+    public void setCalc_res_2(Double calc_res_2) {
+        this.calc_res_2 = calc_res_2;
+    }
 
     @Override
     public String toString() {

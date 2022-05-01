@@ -52,9 +52,10 @@
                 <p id="box-max">Max (M): </p><br>
                 <p id="box-min">Min (M): </p><br>
                 <p id="box-delta">Delta (M): </p><br>
-                <p id="box-aum">Area Magnitude:</p> <br>
-                <p id="box-aul">Area Luminosity: </p><br>
-
+                <p id="box-aum">Area (M):</p> <br>
+                <p id="box-aul">Area (L): </p><br>
+                <p id="box-calc-1">Delta/Max (M): </p><br>
+                <p id="box-calc-2">Σ (x - Min)/Max: </p><br>
             </div>
         </div>
     </div>
@@ -139,13 +140,14 @@
                                 type: 'linear',
                                 display: true,
                                 position: 'left',
-                                //reverse: true,
+                                reverse: true,
                                 
                             },
                             y1: {
                                 type: 'linear',
                                 display: true,
                                 position: 'right',
+                                reverse: true,
                                 grid: {
                                     drawOnChartArea: false,
                                 },
@@ -163,9 +165,10 @@
                 document.getElementById("box-max").textContent = "Max (M): " + parseFloat(res["data"][0]["bandMax"]).toFixed(2);
                 document.getElementById("box-min").textContent = "Min (M): " + parseFloat(res["data"][0]["bandMin"]).toFixed(2);
                 document.getElementById("box-delta").textContent = "Delta (M): " + parseFloat(res["data"][0]["delta_value"]).toFixed(2);
-                document.getElementById("box-aum").textContent = "Area Magnitude: " + parseFloat(res["data"][0]["aum"]).toFixed(2);
-                document.getElementById("box-aul").textContent = "Area Luminosity: " + parseFloat(res["data"][0]["aul"]).toFixed(2);
-
+                document.getElementById("box-aum").textContent = "Area (M): " + parseFloat(res["data"][0]["aum"]).toFixed(2);
+                document.getElementById("box-aul").textContent = "Area (L): " + parseFloat(res["data"][0]["aul"]).toFixed(2);
+                document.getElementById("box-calc-1").textContent = "Delta/Max (M): " + parseFloat(res["data"][0]["calc_res_1"]).toFixed(2);
+                document.getElementById("box-calc-2").textContent = "Σ (x - Min)/Max: " + parseFloat(res["data"][0]["calc_res_2"]).toFixed(2);
                 console.log(res["data"][0]);
             }
 

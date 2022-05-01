@@ -1,11 +1,13 @@
 package com.example.finalproject.dao;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
+import com.example.finalproject.PythonScript;
 import com.example.finalproject.dao.interfaces.ResponseDao;
 import com.example.finalproject.model.CSVData;
 import com.example.finalproject.model.Response;
@@ -82,6 +84,14 @@ public class ResponseDaoImpl extends JdbcDaoSupport implements ResponseDao {
 
         // Insert into sn_results.
         boolean res = insertResults(nameId, band_max, band_min, band_delta_id, curve_id, calc_res_id);
+        PythonScript ps = new PythonScript("cmd /c py script.py");
+
+        try {
+            ps.run();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return (res && tav && dac && cur && (update > 0));
     }
 

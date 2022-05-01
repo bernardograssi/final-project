@@ -129,38 +129,46 @@ public class RetrieveData {
                 double aul_curve = 0.;
                 double calc_result_1 = 0.;
                 double calc_result_2 = 0.;
-                double magnitudes = 0.;
+                double x_min_max = 0.;
                 int size = 0;
+                int limit = 0;
+                JSONArray phtObj = null;
 
                 for (int i = 0; i < photometry.length(); i++) {
-                    JSONArray phtObj = (JSONArray) photometry.get(i);
-                    
-                        if (phtObj.get(0).toString().equals("B")) {
-                            double magnitude = Double.valueOf(phtObj.get(2).toString());
-                            double timeString = Double.valueOf(phtObj.get(1).toString());
-                            double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28)));
+                    phtObj = (JSONArray) photometry.get(i);
 
-                            magnitudes += magnitude;
-                            size += 1;
+                    if (phtObj.get(0).toString().equals("B")) {
+                        double magnitude = Double.valueOf(phtObj.get(2).toString());
+                        double timeString = Double.valueOf(phtObj.get(1).toString());
+                        double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28)));
+                        size += 1;
 
-                            if (magnitude < band_max) {
-                                band_max = magnitude;
-                            }
-
-                            if (magnitude > band_min) {
-                                band_min = magnitude;
-                            }
-
-                            stmt_band.setDouble(1, magnitude);
-                            stmt_band.setDouble(2, luminosity);
-                            stmt_band.setInt(3, id);
-                            stmt_band.addBatch();
-
-                            stmt_time.setDouble(1, timeString);
-                            stmt_time.setInt(2, id);
-                            stmt_time.addBatch();
+                        if (magnitude < band_max) {
+                            band_max = magnitude;
+                            limit = i;
                         }
-                    
+
+                        if (magnitude > band_min) {
+                            band_min = magnitude;
+                        }
+
+                        stmt_band.setDouble(1, magnitude);
+                        stmt_band.setDouble(2, luminosity);
+                        stmt_band.setInt(3, id);
+                        stmt_band.addBatch();
+
+                        stmt_time.setDouble(1, timeString);
+                        stmt_time.setInt(2, id);
+                        stmt_time.addBatch();
+                    }
+
+                }
+
+                for (int k = 0; k <= limit; k++) {
+                    phtObj = (JSONArray) photometry.get(k);
+                    if (phtObj.get(0).toString().equals("B")) {
+                        x_min_max += Math.abs(((Double.valueOf(phtObj.get(2).toString())) - band_min) / band_max);
+                    }
                 }
 
                 // Add data to the sn_delta table
@@ -197,7 +205,7 @@ public class RetrieveData {
 
                 // Add data to the sn_calc
                 calc_result_1 = band_delta / band_max;
-                calc_result_2 = magnitudes / size;
+                calc_result_2 = x_min_max;
                 stmt_calc.setInt(1, id);
                 stmt_calc.setDouble(2, calc_result_1);
                 stmt_calc.setDouble(3, calc_result_2);
@@ -228,6 +236,9 @@ public class RetrieveData {
             }
         }
 
+
+        PythonScript ps = new PythonScript("cmd /c py script.py");
+        ps.run();
     }
 
 }

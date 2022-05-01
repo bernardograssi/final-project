@@ -41,7 +41,9 @@ public class GenericResultDaoImpl extends JdbcDaoSupport implements GenericResul
                     (double) row.get("lum_curve"),
                     (double) row.get("magnitude"),
                     (double) row.get("luminosity"),
-                    (double) row.get("time_value"));
+                    (double) row.get("time_value"),
+                    (double) row.get("calc_res_1"),
+                    (double) row.get("calc_res_2"));
             result.add(genRes);
         }
 
@@ -64,7 +66,9 @@ public class GenericResultDaoImpl extends JdbcDaoSupport implements GenericResul
                     (double) row.get("lum_curve"),
                     (double) row.get("magnitude"),
                     (double) row.get("luminosity"),
-                    (double) row.get("time_value"));
+                    (double) row.get("time_value"),
+                    (double) row.get("calc_res_1"),
+                    (double) row.get("calc_res_2"));
             result.add(genRes);
         }
 
@@ -75,7 +79,7 @@ public class GenericResultDaoImpl extends JdbcDaoSupport implements GenericResul
     public boolean resetDatabase() {
         String sqlReset = "{CALL resetDatabase()};";
         int update = getJdbcTemplate().update(sqlReset);
-        
+
         return true;
     }
 
