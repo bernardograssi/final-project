@@ -183,3 +183,39 @@ BEGIN
 
 END $$
 DELIMITER ;
+
+-- Get all ids from sn_names.
+DROP PROCEDURE IF EXISTS idNames;
+
+DELIMITER $$
+CREATE PROCEDURE idNames()
+BEGIN
+	SELECT id
+	FROM sn_names;
+END $$
+DELIMITER ;
+
+-- Get time and band values by id.
+DROP PROCEDURE IF EXISTS valuesById;
+
+DELIMITER $$
+CREATE PROCEDURE valuesById(theId VARCHAR(255))
+BEGIN
+	SELECT T.time_value, B.magnitude, B.luminosity
+	FROM sn_time_association T
+	JOIN sn_band_association B ON T.sn_id = B.sn_id
+	WHERE T.sn_id = theId;
+END $$
+DELIMITER ;
+
+-- Update curves.
+DROP PROCEDURE IF EXISTS updateCurves;
+
+DELIMITER $$
+CREATE PROCEDURE updateCurves(theMagnitude DOUBLE, theLuminosity DOUBLE, theId INT)
+BEGIN
+	UPDATE sn_curves
+	SET mag_curve = theMagnitude, lum_curve = theLuminosity
+	WHERE sn_id = theId;
+END $$
+DELIMITER ;
