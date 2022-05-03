@@ -80,7 +80,7 @@ public class GenericResultDaoImpl extends JdbcDaoSupport implements GenericResul
         String sqlReset = "{CALL resetDatabase()};";
         int update = getJdbcTemplate().update(sqlReset);
 
-        return true;
+        return update > 0;
     }
 
 }
