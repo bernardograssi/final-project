@@ -219,3 +219,14 @@ BEGIN
 	WHERE sn_id = theId;
 END $$
 DELIMITER ;
+
+-- Check if database is not empty.
+DROP PROCEDURE IF EXISTS countNames;
+
+DELIMITER $$
+CREATE PROCEDURE countNames()
+BEGIN 
+	SELECT COUNT(*) FROM sn_names;
+END $$
+DELIMITER ;
+

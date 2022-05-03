@@ -1,13 +1,19 @@
 package com.example.finalproject;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Main class.
@@ -26,8 +32,16 @@ public class FinalProjectApplication {
 		// Run Spring app.
 		SpringApplication.run(FinalProjectApplication.class, args);
 
+		// Read application.properties file from the /resources folder to get database
+		// credentials.
+		Credentials credentials = new Credentials();
+		HashMap<String, String> credentialsMap = credentials.getCredentials();
+		String dbName = credentialsMap.get("dbName");
+		String user = credentialsMap.get("user");
+		String pwd = credentialsMap.get("pwd");
+
 		// Check if database needs to be populated from API.
-		RetrieveData rd = new RetrieveData("SUPERNOVAE", "root", "root");
+		RetrieveData rd = new RetrieveData(dbName, user, pwd);
 
 		if (isInitialExecution(rd)) {
 			// Let user know of procedure to follow.
@@ -59,9 +73,9 @@ public class FinalProjectApplication {
 	public static boolean isInitialExecution(RetrieveData rd) throws SQLException {
 		// Get number of items in sn_names table.
 		Connection conn = rd.getCon();
-		String SQL = "SELECT COUNT(*) FROM sn_names;";
-		Statement stmt = conn.createStatement();
-		ResultSet rs = stmt.executeQuery(SQL);
+		String SQL = "{CALL countNames()};";
+		CallableStatement stmt = conn.prepareCall(SQL);
+		ResultSet rs = stmt.executeQuery();
 
 		rs.next();
 
@@ -70,4 +84,7 @@ public class FinalProjectApplication {
 		// Return true if database is empty; false otherwise.
 		return count == 0;
 	}
+
+
+
 }

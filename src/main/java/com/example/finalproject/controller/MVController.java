@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.validation.Valid;
 
+import com.example.finalproject.Credentials;
 import com.example.finalproject.RetrieveData;
 import com.example.finalproject.model.CSVData;
 import com.example.finalproject.model.GenericResult;
@@ -26,18 +27,38 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+/**
+ * This is the controller class, where the endpoints are built and the
+ * operations are coordinated from.
+ */
 @Controller
 public class MVController {
 
+    /**
+     * NamesService object.
+     */
     @Autowired
     private NamesService namesService;
 
+    /**
+     * GenericResultService object.
+     */
     @Autowired
     private GenericResultService genericResultsService;
 
+    /**
+     * ResponseService object.
+     */
     @Autowired
     private ResponseService responseService;
 
+    /**
+     * Landing page endpoint, where the 'index.html' file is rendered with the names
+     * and
+     * generic objects injected.
+     * 
+     * @return ModelAndView index.html.
+     */
     @RequestMapping("/")
     public ModelAndView index() {
         ModelAndView mav = new ModelAndView();
@@ -49,6 +70,12 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * Charts endpoint, where the 'charts.html' file is rendered with the names and
+     * generic objects injected.
+     * 
+     * @return ModelAndView charts.html.
+     */
     @RequestMapping("/charts")
     public ModelAndView charts() {
         ModelAndView mav = new ModelAndView();
@@ -60,6 +87,11 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * New Data endpoint, where the 'newdata.html' file is rendered.
+     * 
+     * @return ModelAndView newdata.html.
+     */
     @RequestMapping("/newdata")
     public ModelAndView newdata() {
         ModelAndView mav = new ModelAndView();
@@ -67,6 +99,11 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * Delete data endpoint, where the 'deletedata.html' file is rendered.
+     * 
+     * @return ModelAndView deletedata.html.
+     */
     @RequestMapping("/deletedata")
     public ModelAndView deletedata() {
         ModelAndView mav = new ModelAndView();
@@ -76,6 +113,11 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * Reset endpoint, whete the 'reset.html' file is rendered.
+     * 
+     * @return ModelAndView reset.html.
+     */
     @RequestMapping("/reset")
     public ModelAndView reset() {
         ModelAndView mav = new ModelAndView();
@@ -83,6 +125,11 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * Reload endpoint, where the 'reload.html' file is rendered.
+     * 
+     * @return ModelAndView reload.html.
+     */
     @RequestMapping("/reload")
     public ModelAndView reload() {
         ModelAndView mav = new ModelAndView();
@@ -90,13 +137,27 @@ public class MVController {
         return mav;
     }
 
+    /**
+     * Reload Database POST endpoint, where the stored procedure responsible for
+     * reseting the whole database is called and the repopulation of the tables is
+     * performed.
+     * 
+     * @return ResponseEntity with HttpStatus, either OK if successful, or
+     *         BAD_REQUEST otherwise.
+     * @throws IOException
+     */
     @PostMapping("/reloadDatabase")
-    public ResponseEntity<Object> reloadDatabase() {
+    public ResponseEntity<Object> reloadDatabase() throws IOException {
         RetrieveData rd;
+        Credentials credentials = new Credentials();
+        HashMap<String, String> credentialsMap = credentials.getCredentials();
+        String dbName = credentialsMap.get("dbName");
+        String user = credentialsMap.get("user");
+        String pwd = credentialsMap.get("pwd");
         try {
-            genericResultsService.resetDatabase();
-            rd = new RetrieveData("SUPERNOVAE", "root", "root");
-            rd.loadDatabase();
+            genericResultsService.resetDatabase(); // Reset database.
+            rd = new RetrieveData(dbName, user, pwd); // New database connection
+            rd.loadDatabase(); // Load the database with data from API.
             return new ResponseEntity<>(HttpStatus.OK);
         } catch (SQLException | IOException e) {
             System.out.println(e);
@@ -104,6 +165,13 @@ public class MVController {
         }
     }
 
+    /**
+     * Reset Database POST endpoint, where the stored procedure responsible for
+     * reseting the whole database is called.
+     * 
+     * @return ResponseEntity with HttpStatus, either OK if successfull, or
+     *         BAD_REQUEST otherwise.
+     */
     @PostMapping("/resetDatabase")
     public ResponseEntity<Object> resetDatabase() {
         boolean reset = genericResultsService.resetDatabase();
@@ -114,6 +182,14 @@ public class MVController {
         return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Delete item POST endpoint, where the stored procedure that deletes a
+     * supernova by ID is called.
+     * 
+     * @param name the name of the supernova to be deleted from the database.
+     * @return ResponseEntity with HttpStatus, either OK if successfull, or
+     *         BAD_REQUEST otherwise.
+     */
     @PostMapping("/deleteItem")
     public ResponseEntity<Object> deleteItem(@RequestBody Names name) {
         boolean res = namesService.deleteById(name.getId());
@@ -127,6 +203,14 @@ public class MVController {
         return new ResponseEntity<Object>(map, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Add New Data POST endpoint, where the stored procedure to insert the new data
+     * is called.
+     * 
+     * @param data the data parsed from the csv file.
+     * @return ResponseEntity with HttpStatus, either OK if successfull, or
+     *         BAD_REQUEST otherwise.
+     */
     @PostMapping("/addNewData")
     public ResponseEntity<Object> addNewData(@Valid @RequestBody CSVData data) {
         HashMap<String, String> map = new HashMap<>();
@@ -148,20 +232,44 @@ public class MVController {
         return new ResponseEntity<Object>(map, HttpStatus.OK);
     }
 
+    /**
+     * Get SN Data GET endpoint, where the stored procedure responsible for getting
+     * the supernova data by name is called.
+     * 
+     * @param name the name of the supernova to be queried.
+     * @return ResponseEntity with HttpStatus, either OK if successfull, or
+     *         BAD_REQUEST otherwise.
+     */
     @RequestMapping("/getSNData/{name}")
     public ResponseEntity<Object> getData(@PathVariable String name) {
         Map<String, Object> map = new HashMap<>();
         List<GenericResult> gen = genericResultsService.getDataByName(name);
-        map.put("data", gen);
-        return new ResponseEntity<Object>(map, HttpStatus.OK);
+
+        if (!gen.isEmpty()) {
+            map.put("data", gen);
+            return new ResponseEntity<Object>(map, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<Object>(map, HttpStatus.BAD_REQUEST);
+        }
     }
 
+    /**
+     * Get SN Data GET endpoint, where the stored procedure responsible for getting
+     * all the data from the database is called.
+     * 
+     * @return ResponseEntity with HttpStatus, either OK if successfull, or
+     *         BAD_REQUEST otherwise.
+     */
     @RequestMapping("/getSNData")
     public ResponseEntity<Object> getTotalData() {
         Map<String, Object> map = new HashMap<>();
         List<GenericResult> gen = genericResultsService.getAllData();
-        map.put("values", gen);
-        return new ResponseEntity<Object>(map, HttpStatus.OK);
+        if (!gen.isEmpty()) {
+            map.put("data", gen);
+            return new ResponseEntity<Object>(map, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<Object>(map, HttpStatus.BAD_REQUEST);
+        }
     }
 
 }
