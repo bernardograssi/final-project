@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,29 +20,63 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.core.io.ClassPathResource;
 
+/**
+ * This class represents an object that has a database connection and loads the
+ * database from an open-source API.
+ */
 public class RetrieveData {
 
+    // Attribute connection.
     private Connection con;
 
+    /**
+     * This is the constructor of the class.
+     * 
+     * @param dbName the database name.
+     * @param user   the username from the database.
+     * @param pwd    the password from the database.
+     * @throws SQLException
+     */
     public RetrieveData(String dbName, String user, String pwd) throws SQLException {
         this.con = (new DatabaseConnectionManager(dbName, user, pwd)).getConnection();
         System.out.println("\n\nSuccessfully connected to the database :)");
     }
 
+    /**
+     * This method returns the Connection object.
+     * 
+     * @return the Connection object.
+     */
     public Connection getCon() {
         return this.con;
     }
 
+    /**
+     * This method allows the user to set the Connection object.
+     * 
+     * @param con the Connection object.
+     */
     public void setCon(Connection con) {
         this.con = con;
     }
 
+    /**
+     * This method loads the database with data from both an open-source API and
+     * some names from a text file.
+     * 
+     * @throws SQLException
+     * @throws IOException
+     */
     public void loadDatabase() throws SQLException, IOException {
-        // Read text file with supernovae names.
+        // File with supernovae names.
         File file = new ClassPathResource("static/supernova_data.txt").getFile();
+
+        // Objects used to read the file.
         FileReader fr = new FileReader(file);
         BufferedReader br = new BufferedReader(fr);
         String line;
+
+        // Define variables used to parse the file.
         String SQL = "INSERT INTO sn_names(name) VALUES (?);";
         PreparedStatement stmt = con.prepareStatement(SQL);
         ArrayList<String> list = new ArrayList<>();
@@ -50,7 +85,7 @@ public class RetrieveData {
         double counter = 0;
         URL url;
 
-        // Add names to table in database.
+        // For each line in the text file, add it to the sn_names table.
         while ((line = br.readLine()) != null) {
             list.add(line);
             stmt.setString(1, line);
@@ -62,23 +97,18 @@ public class RetrieveData {
         // For each supernova name, get band data, if > 0, add data to tables
         // (SN_RESULTS, SN_BAND and SN_TIME).
         for (String sn : list) {
+            // Increment counter and output percentage to user.
             counter += 1;
             System.out.println("Loading -> " + String.valueOf(Math.round((counter / list.size()) * 100)) + "%");
 
-            SQL = "SELECT id, name FROM sn_names WHERE name = ?;";
-            stmt = con.prepareStatement(SQL);
-            stmt.setString(1, sn);
-            rs = stmt.executeQuery();
+            // Get id and names from the sn_names table.
+            id = getIdAndNames(sn);
 
-            while (rs.next()) {
-                id = rs.getInt(1);
-                break;
-            }
-
+            // URL object.
             url = new URL(String.format("https://api.astrocats.space/%s/photometry/band+time+magnitude", sn));
 
+            // HTTP connection object.
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
             conn.setRequestProperty("User-Agent",
                     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
             conn.setRequestMethod("GET");
@@ -86,6 +116,8 @@ public class RetrieveData {
 
             int responsecode = conn.getResponseCode();
 
+            // If response code of HTTP code is not 200, throw exception.
+            // Otherwise, move forward to process the response.
             if (responsecode != 200) {
                 throw new RuntimeException("HttpResponseCode: " + responsecode);
             } else {
@@ -130,28 +162,31 @@ public class RetrieveData {
                 double calc_result_1 = 0.;
                 double calc_result_2 = 0.;
                 double x_min_max = 0.;
-                int size = 0;
                 int limit = 0;
                 JSONArray phtObj = null;
 
+                // For each item in the photometry list.
                 for (int i = 0; i < photometry.length(); i++) {
-                    phtObj = (JSONArray) photometry.get(i);
+                    phtObj = (JSONArray) photometry.get(i); // Get array of values.
 
+                    // If the current object represents a value that has a "B" band, grab the data from it.
                     if (phtObj.get(0).toString().equals("B")) {
-                        double magnitude = Double.valueOf(phtObj.get(2).toString());
-                        double timeString = Double.valueOf(phtObj.get(1).toString());
-                        double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28)));
-                        size += 1;
+                        double magnitude = Double.valueOf(phtObj.get(2).toString()); // Magnitude value.
+                        double timeString = Double.valueOf(phtObj.get(1).toString()); // Time value.
+                        double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28))); // Luminosity value.
 
+                        // Check for maximum and update.
                         if (magnitude < band_max) {
                             band_max = magnitude;
                             limit = i;
                         }
 
+                        // Check for minimum and update.
                         if (magnitude > band_min) {
                             band_min = magnitude;
                         }
 
+                        // Set values for statements.
                         stmt_band.setDouble(1, magnitude);
                         stmt_band.setDouble(2, luminosity);
                         stmt_band.setInt(3, id);
@@ -164,6 +199,7 @@ public class RetrieveData {
 
                 }
 
+                // Perform calculation to get calc_res_1.
                 for (int k = 0; k <= limit; k++) {
                     phtObj = (JSONArray) photometry.get(k);
                     if (phtObj.get(0).toString().equals("B")) {
@@ -177,6 +213,7 @@ public class RetrieveData {
                 stmt_delta.setDouble(2, band_delta);
                 stmt_delta.executeUpdate();
 
+                // Get last ID from sn_deltas.
                 String SQLDeltaID = "SELECT MAX(id) FROM sn_deltas;";
                 Statement SQLDeltaStmt = con.createStatement();
                 rs = SQLDeltaStmt.executeQuery(SQLDeltaID);
@@ -193,6 +230,7 @@ public class RetrieveData {
                 stmt_curve.setDouble(3, aul_curve);
                 stmt_curve.executeUpdate();
 
+                // Get last ID from sn_curves.
                 String SQLCurveID = "SELECT MAX(id) FROM sn_curves;";
                 Statement SQLCurveStmt = con.createStatement();
                 rs = SQLCurveStmt.executeQuery(SQLCurveID);
@@ -211,6 +249,7 @@ public class RetrieveData {
                 stmt_calc.setDouble(3, calc_result_2);
                 stmt_calc.executeUpdate();
 
+                // Get last ID from sn_calc.
                 String SQLCalcID = "SELECT MAX(id) FROM sn_calc;";
                 Statement SQLCalcStmt = con.createStatement();
                 rs = SQLCalcStmt.executeQuery(SQLCalcID);
@@ -236,9 +275,29 @@ public class RetrieveData {
             }
         }
 
-
+        // Run the Python script to update the sn_curves database.
         PythonScript ps = new PythonScript("cmd /c py script.py");
         ps.run();
     }
+
+    /**
+     * This method gets the id and name of a given supernova.
+     * @param supernova the supernova name.
+     * @return true if operation is successful, false otherwise.
+     * @throws SQLException
+     */
+    public int getIdAndNames(String supernova) throws SQLException{
+        String SQL = "{CALL getIdAndNames(?)};";
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setString("theName", supernova);
+
+		ResultSet rs = stmt.executeQuery();
+        rs.next();
+
+		int count = rs.getInt(1);
+
+        return 1;
+    }
+
 
 }
