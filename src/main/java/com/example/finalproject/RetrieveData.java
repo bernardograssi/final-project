@@ -14,7 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,7 +73,6 @@ public class RetrieveData {
         // Objects used to read the file.
         FileReader fr = new FileReader(file);
         BufferedReader br = new BufferedReader(fr);
-        String line;
 
         // Define variables used to parse the file.
         String SQL = "INSERT INTO sn_names(name) VALUES (?);";
@@ -85,14 +83,7 @@ public class RetrieveData {
         double counter = 0;
         URL url;
 
-        // For each line in the text file, add it to the sn_names table.
-        while ((line = br.readLine()) != null) {
-            list.add(line);
-            stmt.setString(1, line);
-            stmt.addBatch();
-        }
-
-        stmt.executeBatch();
+        list = insertNames(br);
 
         // For each supernova name, get band data, if > 0, add data to tables
         // (SN_RESULTS, SN_BAND and SN_TIME).
@@ -169,11 +160,13 @@ public class RetrieveData {
                 for (int i = 0; i < photometry.length(); i++) {
                     phtObj = (JSONArray) photometry.get(i); // Get array of values.
 
-                    // If the current object represents a value that has a "B" band, grab the data from it.
+                    // If the current object represents a value that has a "B" band, grab the data
+                    // from it.
                     if (phtObj.get(0).toString().equals("B")) {
                         double magnitude = Double.valueOf(phtObj.get(2).toString()); // Magnitude value.
                         double timeString = Double.valueOf(phtObj.get(1).toString()); // Time value.
-                        double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28))); // Luminosity value.
+                        double luminosity = (-2.5) * Math.log10(magnitude / (3 * Math.pow(10, 28))); // Luminosity
+                                                                                                     // value.
 
                         // Check for maximum and update.
                         if (magnitude < band_max) {
@@ -281,23 +274,51 @@ public class RetrieveData {
     }
 
     /**
+     * This method calls the insertName stored procedure, which inserts a supernova
+     * name in the sn_names table. 
+     * The method then returns all the names as an Array of Strings.
+     * 
+     * @param br the BufferedReader object.
+     * @return an Array of Strings containing the names.
+     * @throws SQLException
+     * @throws IOException
+     */
+    public ArrayList<String> insertNames(BufferedReader br) throws SQLException, IOException {
+        ArrayList<String> list = new ArrayList<>();
+        String line;
+        String SQL = "{CALL insertName(?)};"; // Stored procedure call.
+        CallableStatement stmt = null;
+
+        // For each line in the text file, add it to the sn_names table.
+        while ((line = br.readLine()) != null) {
+            list.add(line);
+            stmt = con.prepareCall(SQL);
+            stmt.setString("theName", line);
+            stmt.executeUpdate();
+        }
+
+        // Return the list of names.
+        return list;
+    }
+
+    /**
      * This method gets the id and name of a given supernova.
+     * 
      * @param supernova the supernova name.
      * @return true if operation is successful, false otherwise.
      * @throws SQLException
      */
-    public int getIdAndNames(String supernova) throws SQLException{
+    public int getIdAndNames(String supernova) throws SQLException {
         String SQL = "{CALL getIdAndNames(?)};";
         CallableStatement stmt = con.prepareCall(SQL);
         stmt.setString("theName", supernova);
 
-		ResultSet rs = stmt.executeQuery();
+        ResultSet rs = stmt.executeQuery();
         rs.next();
 
-		int count = rs.getInt(1);
+        int count = rs.getInt(1);
 
-        return 1;
+        return count;
     }
-
 
 }
