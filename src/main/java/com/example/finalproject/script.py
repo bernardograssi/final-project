@@ -6,7 +6,7 @@ import sys
 import re
 
 # Get content from application.properties.
-file = open("application.properties","r")
+file = open("../../../../resources/application.properties","r")
 lines = "".join(file.readlines())
 
 # Parse content to credentials.

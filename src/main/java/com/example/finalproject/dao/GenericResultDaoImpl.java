@@ -112,7 +112,7 @@ public class GenericResultDaoImpl extends JdbcDaoSupport implements GenericResul
         int update = getJdbcTemplate().update(sqlReset); // Call stored procedure.
 
         // Return true if more than zero rows are modified, false otherwise.
-        return update > 0;
+        return update >= 0;
     }
 
 }

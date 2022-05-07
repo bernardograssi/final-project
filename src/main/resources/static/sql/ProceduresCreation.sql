@@ -229,4 +229,3 @@ BEGIN
 	SELECT COUNT(*) FROM sn_names;
 END $$
 DELIMITER ;
-

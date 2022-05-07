@@ -9,10 +9,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
@@ -75,10 +73,7 @@ public class RetrieveData {
         BufferedReader br = new BufferedReader(fr);
 
         // Define variables used to parse the file.
-        String SQL = "INSERT INTO sn_names(name) VALUES (?);";
-        PreparedStatement stmt = con.prepareStatement(SQL);
         ArrayList<String> list = new ArrayList<>();
-        ResultSet rs;
         int id = 0;
         double counter = 0;
         URL url;
@@ -93,7 +88,7 @@ public class RetrieveData {
             System.out.println("Loading -> " + String.valueOf(Math.round((counter / list.size()) * 100)) + "%");
 
             // Get id and names from the sn_names table.
-            id = getIdAndNames(sn);
+            id = getIdByName(sn);
 
             // URL object.
             url = new URL(String.format("https://api.astrocats.space/%s/photometry/band+time+magnitude", sn));
@@ -114,35 +109,7 @@ public class RetrieveData {
             } else {
 
                 // Read JSON object
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(conn.getInputStream()));
-                StringBuilder builder = new StringBuilder();
-
-                for (String l = null; (l = in.readLine()) != null;) {
-                    builder.append(l).append("\n");
-                }
-                JSONObject response = new JSONObject(builder.toString());
-                JSONObject data = response.getJSONObject(sn);
-                JSONArray photometry = data.getJSONArray("photometry");
-
-                // Prepare Statements
-                String SQLBand = "INSERT INTO sn_band_association (magnitude, luminosity, sn_id) VALUES (?, ?, ?);";
-                PreparedStatement stmt_band = con.prepareStatement(SQLBand);
-
-                String SQLTime = "INSERT INTO sn_time_association (time_value, sn_id) VALUES (?, ?);";
-                PreparedStatement stmt_time = con.prepareStatement(SQLTime);
-
-                String SQLDelta = "INSERT INTO sn_deltas (sn_id, delta_value) VALUES (?, ?);";
-                PreparedStatement stmt_delta = con.prepareStatement(SQLDelta);
-
-                String SQLCurve = "INSERT INTO sn_curves (sn_id, mag_curve, lum_curve) VALUES (?, ?, ?);";
-                PreparedStatement stmt_curve = con.prepareStatement(SQLCurve);
-
-                String SQLCalc = "INSERT INTO sn_calc (sn_id, calc_res_1, calc_res_2) VALUES (?, ?, ?);";
-                PreparedStatement stmt_calc = con.prepareStatement(SQLCalc);
-
-                String SQLResult = "INSERT INTO sn_results (sn_id, band_max, band_min, band_delta_id, curve_id, calc_res_id) VALUES (?, ?, ?, ?, ?, ?);";
-                PreparedStatement stmt_result = con.prepareStatement(SQLResult);
+                JSONArray photometry = getJsonArray(conn, sn);
 
                 // Variables to add to sn_results
                 double band_max = 99999.;
@@ -179,15 +146,9 @@ public class RetrieveData {
                             band_min = magnitude;
                         }
 
-                        // Set values for statements.
-                        stmt_band.setDouble(1, magnitude);
-                        stmt_band.setDouble(2, luminosity);
-                        stmt_band.setInt(3, id);
-                        stmt_band.addBatch();
-
-                        stmt_time.setDouble(1, timeString);
-                        stmt_time.setInt(2, id);
-                        stmt_time.addBatch();
+                        // Insert band and time values.
+                        insertBand(magnitude, luminosity, id);
+                        insertTime(timeString, id);
                     }
 
                 }
@@ -200,82 +161,200 @@ public class RetrieveData {
                     }
                 }
 
-                // Add data to the sn_delta table
+                // Add data to the sn_delta table.
                 band_delta = Math.abs(band_max - band_min);
-                stmt_delta.setInt(1, id);
-                stmt_delta.setDouble(2, band_delta);
-                stmt_delta.executeUpdate();
+                insertDeltas(id, band_delta);
 
                 // Get last ID from sn_deltas.
-                String SQLDeltaID = "SELECT MAX(id) FROM sn_deltas;";
-                Statement SQLDeltaStmt = con.createStatement();
-                rs = SQLDeltaStmt.executeQuery(SQLDeltaID);
-                int deltaID = 0;
-
-                while (rs.next()) {
-                    deltaID = rs.getInt(1);
-                    break;
-                }
+                int deltaID = getMaxDeltaID();
 
                 // Add data to the sn_curves
-                stmt_curve.setInt(1, id);
-                stmt_curve.setDouble(2, aum_curve);
-                stmt_curve.setDouble(3, aul_curve);
-                stmt_curve.executeUpdate();
+                insertCurves(id, aum_curve, aul_curve);
 
                 // Get last ID from sn_curves.
-                String SQLCurveID = "SELECT MAX(id) FROM sn_curves;";
-                Statement SQLCurveStmt = con.createStatement();
-                rs = SQLCurveStmt.executeQuery(SQLCurveID);
-                int curveID = 0;
-
-                while (rs.next()) {
-                    curveID = rs.getInt(1);
-                    break;
-                }
+                int curveID = getMaxCurveID();
 
                 // Add data to the sn_calc
                 calc_result_1 = band_delta / band_max;
                 calc_result_2 = x_min_max;
-                stmt_calc.setInt(1, id);
-                stmt_calc.setDouble(2, calc_result_1);
-                stmt_calc.setDouble(3, calc_result_2);
-                stmt_calc.executeUpdate();
+                insertCalc(id, calc_result_1, calc_result_2);
 
                 // Get last ID from sn_calc.
-                String SQLCalcID = "SELECT MAX(id) FROM sn_calc;";
-                Statement SQLCalcStmt = con.createStatement();
-                rs = SQLCalcStmt.executeQuery(SQLCalcID);
-                int calcID = 0;
-
-                while (rs.next()) {
-                    calcID = rs.getInt(1);
-                    break;
-                }
-
-                // Add data to sn_band_association and sn_time_association tables
-                stmt_band.executeBatch();
-                stmt_time.executeBatch();
+                int calcID = getMaxCalcID();
 
                 // Add data to sn_results table
-                stmt_result.setInt(1, id);
-                stmt_result.setDouble(2, band_max);
-                stmt_result.setDouble(3, band_min);
-                stmt_result.setInt(4, deltaID);
-                stmt_result.setInt(5, curveID);
-                stmt_result.setInt(6, calcID);
-                stmt_result.executeUpdate();
+                insertResults(id, band_max, band_min, deltaID, curveID, calcID);
             }
         }
 
         // Run the Python script to update the sn_curves database.
         PythonScript ps = new PythonScript("cmd /c py script.py");
-        ps.run();
+        try {
+            ps.run();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 
+     * @return
+     * @throws SQLException
+     */
+    private int getMaxCalcID() throws SQLException {
+        String SQL = "{CALL getLastCalcId()};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+
+        return rs.getInt("maxId");
+    }
+
+    /**
+     * 
+     * @return
+     * @throws SQLException
+     */
+    private int getMaxCurveID() throws SQLException {
+        String SQL = "{CALL getLastCurveId()};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+
+        return rs.getInt("maxId");
+    }
+
+    /**
+     * 
+     * @return
+     * @throws SQLException
+     */
+    private int getMaxDeltaID() throws SQLException {
+        String SQL = "{CALL getLastBandId()};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+
+        return rs.getInt("maxId");
+    }
+
+    /**
+     * 
+     * @param id
+     * @param band_max
+     * @param band_min
+     * @param deltaID
+     * @param curveID
+     * @param calcID
+     * @throws SQLException
+     */
+    private boolean insertResults(int id, double band_max, double band_min, int deltaID, int curveID, int calcID) throws SQLException {
+        String SQL = "{CALL insertResults(?, ?, ?, ?, ?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setInt(1, id);
+        stmt.setDouble(2, band_max);
+        stmt.setDouble(3, band_min);
+        stmt.setInt(4, deltaID);
+        stmt.setInt(5, curveID);
+        stmt.setInt(6, calcID);
+        stmt.execute();
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param id
+     * @param calc_result_1
+     * @param calc_result_2
+     * @throws SQLException
+     */
+    private boolean insertCalc(int id, double calc_result_1, double calc_result_2) throws SQLException {
+        String SQL = "{CALL insertCalc(?, ?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setInt(1, id);
+        stmt.setDouble(2, calc_result_1);
+        stmt.setDouble(3, calc_result_2);
+        stmt.execute();
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param id
+     * @param aum_curve
+     * @param aul_curve
+     * @return
+     * @throws SQLException
+     */
+    private boolean insertCurves(int id, double aum_curve, double aul_curve) throws SQLException {
+        String SQL = "{CALL insertCurves(?, ?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setInt(1, id);
+        stmt.setDouble(2, aum_curve);
+        stmt.setDouble(3, aul_curve);
+        stmt.execute();
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param id
+     * @param band_delta
+     * @return
+     * @throws SQLException
+     */
+    private boolean insertDeltas(int id, double band_delta) throws SQLException {
+        String SQL = "{CALL insertDelta(?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setInt(1, id);
+        stmt.setDouble(2, band_delta);
+        stmt.execute();
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param timeString
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    private boolean insertTime(double timeString, int id) throws SQLException {
+        String SQL = "{CALL insertTime(?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setDouble(1, timeString);
+        stmt.setInt(2, id);
+        stmt.execute();
+
+        return true;
+    }
+
+    /**
+     * 
+     * @param magnitude
+     * @param luminosity
+     * @param id
+     * @return
+     * @throws SQLException
+     */
+    private boolean insertBand(double magnitude, double luminosity, int id) throws SQLException {
+        String SQL = "{CALL insertValues(?, ?, ?)};"; // Stored procedure call.
+        CallableStatement stmt = con.prepareCall(SQL);
+        stmt.setDouble(1, magnitude);
+        stmt.setDouble(2, luminosity);
+        stmt.setInt(3, id);
+        stmt.execute();
+
+        return true;
     }
 
     /**
      * This method calls the insertName stored procedure, which inserts a supernova
-     * name in the sn_names table. 
+     * name in the sn_names table.
      * The method then returns all the names as an Array of Strings.
      * 
      * @param br the BufferedReader object.
@@ -293,7 +372,7 @@ public class RetrieveData {
         while ((line = br.readLine()) != null) {
             list.add(line);
             stmt = con.prepareCall(SQL);
-            stmt.setString("theName", line);
+            stmt.setString(1, line);
             stmt.executeUpdate();
         }
 
@@ -308,10 +387,10 @@ public class RetrieveData {
      * @return true if operation is successful, false otherwise.
      * @throws SQLException
      */
-    public int getIdAndNames(String supernova) throws SQLException {
-        String SQL = "{CALL getIdAndNames(?)};";
+    public int getIdByName(String supernova) throws SQLException {
+        String SQL = "{CALL getIdByName(?)};";
         CallableStatement stmt = con.prepareCall(SQL);
-        stmt.setString("theName", supernova);
+        stmt.setString(1, supernova);
 
         ResultSet rs = stmt.executeQuery();
         rs.next();
@@ -319,6 +398,27 @@ public class RetrieveData {
         int count = rs.getInt(1);
 
         return count;
+    }
+
+    /**
+     * 
+     * @param conn
+     * @param sn
+     * @return
+     * @throws IOException
+     */
+    public JSONArray getJsonArray(HttpURLConnection conn, String sn) throws IOException {
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(conn.getInputStream()));
+        StringBuilder builder = new StringBuilder();
+
+        for (String l = null; (l = in.readLine()) != null;) {
+            builder.append(l).append("\n");
+        }
+
+        JSONObject response = new JSONObject(builder.toString());
+        JSONObject data = response.getJSONObject(sn);
+        return data.getJSONArray("photometry");
     }
 
 }
