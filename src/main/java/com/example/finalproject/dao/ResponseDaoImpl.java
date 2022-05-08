@@ -7,7 +7,7 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
-import com.example.finalproject.PythonScript;
+import com.example.finalproject.Executer;
 import com.example.finalproject.dao.interfaces.ResponseDao;
 import com.example.finalproject.model.CSVData;
 import com.example.finalproject.model.Response;
@@ -111,21 +111,18 @@ public class ResponseDaoImpl extends JdbcDaoSupport implements ResponseDao {
 
         // Insert into sn_results using the IDs previously obtained.
         boolean res = insertResults(nameId, band_max, band_min, band_delta_id, curve_id, calc_res_id);
-        PythonScript ps = new PythonScript("cmd /c py script.py");
+        Executer exe = new Executer();
 
         // Run the Python script to update sn_curves.
-        try {
-            ps.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        exe.run();
 
         // Returns true if all updates were successful, false otherwise.
         return (res && tav && dac && cur && (update > 0));
     }
 
     /**
-     * This method inserts data into the sn_band_association and sn_time_association tables.
+     * This method inserts data into the sn_band_association and sn_time_association
+     * tables.
      * 
      * @return true if updates are successful, false otherwise.
      */

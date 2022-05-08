@@ -188,12 +188,9 @@ public class RetrieveData {
         }
 
         // Run the Python script to update the sn_curves database.
-        PythonScript ps = new PythonScript("cmd /c py script.py");
-        try {
-            ps.run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Executer exe = new Executer();
+        exe.run();
+
     }
 
     /**
