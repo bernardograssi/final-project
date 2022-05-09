@@ -52,6 +52,18 @@
                 <li id="warning">
                     Warning
                 </li>
+                <li id="reset-spinner">
+                    <div class="lds-roller">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </li>
             </ul>
         </div>
     </div>
@@ -62,6 +74,7 @@
     // On file submission:
     submitFile = function (element) {
         let input = $("#fileInput").prop('files')[0];
+        var executed = false;
 
         if (input !== undefined && input.type === "text/csv") {
             var reader = new FileReader();
@@ -70,7 +83,7 @@
                     let result = reader.result.split("\r\n");
 
                     if (result[0].split(",")[0] !== "name" && result[0].split(",")[1] !== "time" && result[0].split(",")[2] !== "magnitude") {
-                        throw 'Cannot parse csv file!';
+                        throw "Cannot parse csv file!";
                     }
 
                     let name = result[1].split(",")[0];
@@ -82,10 +95,16 @@
                     for (var i = 1; i < result.length; i++) {
                         let time = parseFloat(result[i].split(",")[1]);
                         let magnitude = parseFloat(result[i].split(",")[2]);
+                        let innerName = result[i].split(",")[0];
 
-                        if (time !== undefined && magnitude !== undefined && (isNaN(time) === false) && (isNaN(magnitude) === false)) {
+                        if (time !== undefined && magnitude !== undefined &&
+                            (isNaN(time) === false) && (isNaN(magnitude) === false)) {
                             let obj = { "time": time, "magnitude": magnitude };
                             output["values"].push(obj);
+                        } else {
+                            if (((isNaN(innerName) === true) || (isNaN(time) === true) || (isNaN(magnitude) === true)) && (i != result.length-1)) {
+                                throw "Cannot parse csv file!";
+                            }
                         }
                     }
 
@@ -97,6 +116,14 @@
                         data: JSON.stringify(output),
                         dataType: "json",
                         cache: false,
+                        beforeSend: function () {
+                            if (!executed) {
+                                $("#reset-spinner").css("display", "block");
+                                $("#reset-spinner").css("transform", "translate(11em, 0em)");
+                            }
+                        }, complete: function () {
+                            $("#reset-spinner").css("display", "none");
+                        },
                         success: function (data) {
                             // Let user know of successful operation.
                             $("#warning").css("display", "block");
@@ -123,7 +150,7 @@
                 reader.readAsText(input);
             }
         } else {
-            alert("failed");
+            alert("This type of file is not supported! Please submit a .csv file.");
         }
     }
 
